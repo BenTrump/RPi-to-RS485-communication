@@ -2,6 +2,7 @@
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 # from pymodbus.register_read_message import ReadInputRegistersResponse
 import tkinter as tk
+from threading import Timer
 
 
 class Main(tk.Frame):
@@ -20,13 +21,13 @@ class Main(tk.Frame):
         self.btn_read_regs.grid(row=3, column=1, padx=(10, 0), pady=(10, 0))
         self.btn_read_regs.config(font="Arial 12 bold", command=self.read_holding_reg)
 
-        self.lbl_slave_id = tk.Label(self, text="Slave ID: ", font="Arial 12 bold", anchor=tk.E, width=10)
+        self.lbl_slave_id = tk.Label(self, text="Slave ID: ", font="Arial 12 bold", anchor=tk.E, width=15)
         self.lbl_slave_id.grid(row=1, column=3, padx=(10, 0), pady=(10, 0))
-        self.lbl_data_entry = tk.Label(self, text="Output data: ", font="Arial 12 bold", anchor=tk.E, width=10)
+        self.lbl_data_entry = tk.Label(self, text="Output data: ", font="Arial 12 bold", anchor=tk.E, width=15)
         self.lbl_data_entry.grid(row=2, column=3, padx=(10, 0), pady=(10, 0))
-        self.lbl_data_return = tk.Label(self, text="Return data: ", font="Arial 12 bold", anchor=tk.E, width=10)
+        self.lbl_data_return = tk.Label(self, text="Return data: ", font="Arial 12 bold", anchor=tk.E, width=15)
         self.lbl_data_return.grid(row=3, column=3, padx=(10, 0), pady=(10, 0))
-        self.lbl_comms_status = tk.Label(self, text="Status: ", font="Arial 12 bold", anchor=tk.E, width=10)
+        self.lbl_comms_status = tk.Label(self, text="Status: ", font="Arial 12 bold", anchor=tk.E, width=15)
         self.lbl_comms_status.grid(row=4, column=3, padx=(10, 0), pady=(10, 0))
 
         self.txt_slave_id = tk.Entry(self, font="Arial 12 bold", relief="sunken", width=30)
@@ -40,18 +41,48 @@ class Main(tk.Frame):
         self.display_status.grid(row=4, column=4, padx=(10, 0), pady=(10, 0), sticky=tk.W)
 
     def write_to_multi_regs(self):
-        data = self.txt_data_entry.get()
-        print("Sending: " + data)
-        self.gui.client.write_registers(value=[5, 6, 7], address=1, unit=0x01)
+        try:
+            data = self.txt_data_entry.get().split()
+            fixed_data = list(map(int, data))
+            print("Sending: " + "-".join(data))
+            self.gui.client.write_registers(values=fixed_data, address=40001, unit=0x01)
+            self.display_status.config(bg="green")
+            timer = Timer(2.0, self.normal_status)
+            timer.start()
+        except IOError:
+            self.display_status.config(bg="red")
+            timer = Timer(2.0, self.normal_status)
+            timer.start()
+            # Todo: find the actual error
+            # Todo: make the display status a better color
+            # Todo: put timer outside of try except, doesn't need to be in both
 
     def write_to_single_reg(self):
-        data = self.txt_data_entry.get()
-        print("Sending: " + data)
-        self.gui.client.write_register(value=15, address=1, unit=0x01)
+        try:
+            data = self.txt_data_entry.get().split()
+            print("Sending: " + "-".join(data[0]))
+            self.gui.client.write_register(value=data[0], address=40001, unit=0x01)
+        except IOError:
+            self.display_status.config(bg="red")
+            timer = Timer(2.0, self.normal_status)
+            timer.start()
+            # Todo: find the actual error
 
     def read_holding_reg(self):
-        register_data = self.gui.client.read_holding_registers(1, 4, unit=0x01)
-        print("Data from registers: " + register_data.registers)
+        try:
+            register_data = self.gui.client.read_holding_registers(40001, 4, unit=0x01)
+            self.txt_data_return.config(text=register_data.registers)
+            print("Data from registers: ", end="")
+            print(register_data.registers)
+            self.txt_data_entry.config(text=" ")
+        except IOError:
+            self.display_status.config(bg="red")
+            timer = Timer(2.0, self.normal_status)
+            timer.start()
+            # Todo: find the actual error
+
+    def normal_status(self):
+        self.display_status.config(bg="sky blue")
 
 
 class GUI(object):
