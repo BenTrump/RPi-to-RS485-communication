@@ -1,6 +1,6 @@
 
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-# from pymodbus.register_read_message import ReadInputRegistersResponse
+
 import tkinter as tk
 from threading import Timer
 
@@ -44,29 +44,29 @@ class Main(tk.Frame):
         try:
             data = self.txt_data_entry.get().split()
             fixed_data = list(map(int, data))
-            print("Sending: " + "-".join(data))
+            print("Sending: " + ",".join(data))
             self.gui.client.write_registers(values=fixed_data, address=40001, unit=0x01)
             self.display_status.config(bg="green")
-            timer = Timer(2.0, self.normal_status)
-            timer.start()
         except IOError:
             self.display_status.config(bg="red")
-            timer = Timer(2.0, self.normal_status)
-            timer.start()
-            # Todo: find the actual error
-            # Todo: make the display status a better color
-            # Todo: put timer outside of try except, doesn't need to be in both
+        timer = Timer(2.0, self.normal_status)
+        timer.start()
+
+        # Todo: find the actual error
+        # Todo: make the display status a better color
 
     def write_to_single_reg(self):
         try:
             data = self.txt_data_entry.get().split()
-            print("Sending: " + "-".join(data[0]))
+            print("Sending: " + ",".join(data[0]))
             self.gui.client.write_register(value=data[0], address=40001, unit=0x01)
+            self.display_status.config(bg="green")
         except IOError:
             self.display_status.config(bg="red")
-            timer = Timer(2.0, self.normal_status)
-            timer.start()
-            # Todo: find the actual error
+        timer = Timer(2.0, self.normal_status)
+        timer.start()
+
+        # Todo: find the actual error
 
     def read_holding_reg(self):
         try:
@@ -75,17 +75,18 @@ class Main(tk.Frame):
             print("Data from registers: ", end="")
             print(register_data.registers)
             self.txt_data_entry.config(text=" ")
+            self.display_status.config(bg="green")
         except IOError:
             self.display_status.config(bg="red")
-            timer = Timer(2.0, self.normal_status)
-            timer.start()
-            # Todo: find the actual error
+        timer = Timer(2.0, self.normal_status)
+        timer.start()
+        # Todo: find the actual error
 
     def normal_status(self):
         self.display_status.config(bg="sky blue")
 
 
-class GUI(object):
+class GUI:
     def __init__(self):
         self.master = tk.Tk()
         self.master.title("RS485 Communication Tester")
